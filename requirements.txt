@@ -1,3 +1,4 @@
 piazza-api
 anthropic
 discord-webhook
+python-dotenv

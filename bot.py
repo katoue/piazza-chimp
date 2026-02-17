@@ -5,12 +5,16 @@
 import time
 import logging
 import sys
+import os
+from dotenv import load_dotenv
 
 import config
-import secrets
 import db
 import piazza_client
 import ai_answerer
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Setup logging
 logging.basicConfig(
@@ -33,9 +37,9 @@ def run_bot():
     # Login to Piazza
     try:
         network = piazza_client.login(
-            email=secrets.p_email,
-            password=secrets.p_pass,
-            network_id=secrets.p_network
+            email=os.getenv("PIAZZA_EMAIL"),
+            password=os.getenv("PIAZZA_PASSWORD"),
+            network_id=os.getenv("PIAZZA_NETWORK")
         )
     except Exception as e:
         logger.error(f"Failed to login to Piazza: {e}")
@@ -105,8 +109,8 @@ def run_bot():
                 answer = ai_answerer.generate_answer(
                     subject=subject,
                     content=content,
-                    course_name=secrets.course_name,
-                    api_key=secrets.anthropic_key,
+                    course_name=os.getenv("COURSE_NAME"),
+                    api_key=os.getenv("ANTHROPIC_API_KEY"),
                 )
 
                 if answer is None:
