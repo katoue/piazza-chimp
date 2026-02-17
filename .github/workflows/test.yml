@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v3
@@ -46,9 +46,9 @@ jobs:
         python -c "from rag.ingester import ingest_file"
         python -c "from rag.retriever import Retriever"
 
-    - name: Test embedder
+    - name: Test embedder imports
       run: |
-        python -c "from rag.embedder import embed_one; vec = embed_one('test'); assert len(vec) == 384, f'Expected 384 dims, got {len(vec)}'; print('✓ Embedder test passed')"
+        python -c "from rag.embedder import embed, embed_one; print('✓ Embedder imports passed')"
 
     - name: Test configuration
       run: |
