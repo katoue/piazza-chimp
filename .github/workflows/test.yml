@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8
+
+    - name: Lint with flake8
+      run: |
+        # Stop build on syntax errors
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Warnings don't stop build
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Test imports
+      run: |
+        python -c "import bot"
+        python -c "import ai_answerer"
+        python -c "import piazza_client"
+        python -c "import db"
+        python -c "import config"
+        python -c "from rag.embedder import embed_one"
+        python -c "from rag.vector_store import init_store"
+        python -c "from rag.ingester import ingest_file"
+        python -c "from rag.retriever import Retriever"
+
+    - name: Test embedder
+      run: |
+        python -c "from rag.embedder import embed_one; vec = embed_one('test'); assert len(vec) == 384, f'Expected 384 dims, got {len(vec)}'; print('✓ Embedder test passed')"
+
+    - name: Test configuration
+      run: |
+        python -c "
+import config
+assert hasattr(config, 'POLL_INTERVAL_SEC'), 'Missing POLL_INTERVAL_SEC'
+assert hasattr(config, 'MODEL'), 'Missing MODEL'
+assert hasattr(config, 'CHROMA_DB_PATH'), 'Missing CHROMA_DB_PATH'
+assert hasattr(config, 'RAG_TOP_K'), 'Missing RAG_TOP_K'
+print('✓ Configuration test passed')
+"
