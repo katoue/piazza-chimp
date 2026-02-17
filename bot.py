@@ -12,6 +12,7 @@ import config
 import db
 import piazza_client
 import ai_answerer
+from rag.retriever import Retriever
 
 # Load environment variables from .env file
 load_dotenv()
@@ -33,6 +34,14 @@ def run_bot():
     # Initialize database
     conn = db.init_db(config.DB_PATH)
     logger.info(f"Database initialized: {config.DB_PATH}")
+
+    # Initialize RAG retriever
+    try:
+        retriever = Retriever(config.CHROMA_DB_PATH, config.EMBEDDING_MODEL)
+        logger.info("RAG Retriever initialized")
+    except Exception as e:
+        logger.warning(f"Failed to initialize RAG retriever: {e}")
+        retriever = None
 
     # Login to Piazza
     try:
@@ -105,12 +114,24 @@ def run_bot():
 
                 logger.info(f"Generating answer for post #{post_nr}: {subject[:50]}")
 
+                # Retrieve context from RAG
+                rag_context = ""
+                if retriever:
+                    try:
+                        query_text = f"{subject} {content}"
+                        rag_context = retriever.query(query_text, top_k=config.RAG_TOP_K)
+                        if rag_context:
+                            logger.info("Retrieved context from RAG collections")
+                    except Exception as e:
+                        logger.warning(f"Error retrieving RAG context: {e}")
+
                 # Generate answer
                 answer = ai_answerer.generate_answer(
                     subject=subject,
                     content=content,
                     course_name=os.getenv("COURSE_NAME"),
                     api_key=os.getenv("ANTHROPIC_API_KEY"),
+                    context=rag_context,
                 )
 
                 if answer is None:

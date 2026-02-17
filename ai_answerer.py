@@ -25,6 +25,7 @@ def generate_answer(
     content: str,
     course_name: str,
     api_key: str,
+    context: str = "",
 ) -> str | None:
     """
     Generate an answer using Claude API.
@@ -34,6 +35,7 @@ def generate_answer(
         content: Plain text post content
         course_name: Name of the course (for system prompt)
         api_key: Anthropic API key
+        context: Optional RAG context (course materials and past Q&As)
 
     Returns:
         Generated answer text, or None if an error occurred
@@ -47,6 +49,16 @@ Answer student questions clearly and concisely.
 - Do not address grades, personal matters, or exam answers
 - Keep responses under 350 words
 - Use plain text (no HTML tags)"""
+
+    # Inject context if available
+    if context:
+        system_prompt += f"""
+
+[RELEVANT CONTEXT]
+{context}
+[/RELEVANT CONTEXT]
+
+Use the above context if relevant to answering the question. If the context doesn't help, use general knowledge."""
 
     user_prompt = f"Subject: {subject}\n\nQuestion: {content}"
 

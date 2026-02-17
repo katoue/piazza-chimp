@@ -5,7 +5,6 @@ import time
 import logging
 from html.parser import HTMLParser
 from piazza_api import Piazza
-from piazza_api.network import UnreadFilter
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +36,19 @@ def login(email: str, password: str, network_id: str):
 
 
 def get_unread_posts(network) -> list:
-    """Get list of unread posts from the feed (lightweight API call)."""
+    """Get list of unread posts from the feed."""
     logger.info("Fetching unread posts...")
     try:
-        feed = network.get_filtered_feed(UnreadFilter())
-        unread_items = feed.get("feed", [])
+        # Use get_feed() instead of get_filtered_feed() to avoid RPC issues
+        feed = network.get_feed(limit=100)
+        feed_items = feed.get("feed", [])
+
+        # Filter for unread posts (posts with unread followups or updates)
+        unread_items = [
+            item for item in feed_items
+            if item.get("unread") or item.get("no_answer_followup")
+        ]
+
         logger.info(f"Found {len(unread_items)} unread posts")
         return unread_items
     except Exception as e:
