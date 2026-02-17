@@ -1,4 +1,4 @@
-name: Lint & Format Check
+name: Lint Check
 
 on:
   push:
@@ -18,11 +18,19 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install linting tools
+    - name: Check file formatting
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8
-
-    - name: Run flake8
-      run: |
-        flake8 *.py --count --exit-zero --max-line-length=120 --statistics || true
+        # Check line lengths
+        python -c "
+import glob
+max_len = 120
+issues = 0
+for file in glob.glob('*.py'):
+    with open(file) as f:
+        for i, line in enumerate(f, 1):
+            if len(line.rstrip()) > max_len:
+                print(f'{file}:{i}: Line too long ({len(line.rstrip())} > {max_len})')
+                issues += 1
+if issues == 0:
+    print('✓ All lines within 120 characters')
+"

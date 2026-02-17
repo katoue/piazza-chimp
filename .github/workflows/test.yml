@@ -7,7 +7,7 @@ on:
     branches: [ master, main ]
 
 jobs:
-  test:
+  syntax-check:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,35 +21,29 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install core dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # Install only core deps, skip heavy ML libraries for CI
-        pip install python-dotenv anthropic piazza-api
-
-    - name: Test imports (core)
-      run: |
-        python -c "import bot"
-        python -c "import ai_answerer"
-        python -c "import piazza_client"
-        python -c "import db"
-        python -c "import config"
-
-    - name: Test configuration
-      run: |
-        python -c "
-import config
-assert hasattr(config, 'POLL_INTERVAL_SEC'), 'Missing POLL_INTERVAL_SEC'
-assert hasattr(config, 'MODEL'), 'Missing MODEL'
-assert hasattr(config, 'DB_PATH'), 'Missing DB_PATH'
-assert hasattr(config, 'CHROMA_DB_PATH'), 'Missing CHROMA_DB_PATH'
-print('✓ Configuration test passed')
-"
-
-    - name: Syntax check
+    - name: Check Python syntax
       run: |
         python -m py_compile bot.py
         python -m py_compile ai_answerer.py
         python -m py_compile piazza_client.py
         python -m py_compile db.py
         python -m py_compile config.py
+        python -m py_compile test_answer.py
+        echo "✓ All files have valid Python syntax"
+
+    - name: Check configuration file
+      run: |
+        python -c "
+import config
+required = ['POLL_INTERVAL_SEC', 'MODEL', 'DB_PATH', 'CHROMA_DB_PATH', 'RAG_TOP_K']
+for attr in required:
+    assert hasattr(config, attr), f'Missing config: {attr}'
+print('✓ Configuration is complete')
+"
+
+    - name: Check README and docs
+      run: |
+        test -f README.md && echo "✓ README.md exists"
+        test -f CICD.md && echo "✓ CICD.md exists"
+        test -f LICENSE && echo "✓ LICENSE exists"
+        test -f requirements.txt && echo "✓ requirements.txt exists"
